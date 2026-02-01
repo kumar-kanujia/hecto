@@ -17,6 +17,13 @@ use crate::editor::{
 
 use std::{cmp::min, io::Error};
 
+#[derive(Default, Eq, PartialEq, Clone, Copy)]
+pub enum SearchDirection {
+  #[default]
+  Forward,
+  Backward,
+}
+
 #[derive(Default)]
 pub struct View {
   buffer: Buffer,
@@ -320,7 +327,7 @@ impl View {
     self.search_info = Some(SearchInfo {
       prev_location: self.text_location,
       prev_scroll_offset: self.scroll_offset,
-      query: Line::default(),
+      query: None,
     });
   }
 
@@ -333,62 +340,67 @@ impl View {
       self.text_location = search_info.prev_location;
       self.scroll_offset = search_info.prev_scroll_offset;
       self.set_needs_redraw(true);
+
+      // ensure the previous location is still visible even if the terminal has been resized during search.
+      self.scroll_text_location_into_view();
     }
     self.search_info = None;
   }
 
   pub fn search(&mut self, query: &str) {
     if let Some(search_info) = &mut self.search_info {
-      search_info.query = Line::from(query);
+      search_info.query = Some(Line::from(query));
     }
-    self.search_from(self.text_location);
+    self.search_in_direction(self.text_location, SearchDirection::default());
+  }
+
+  // Attempts to get the current search query - for scenarios where the search query absolutely must be there.
+  // Panics if not present in debug, or if search info is not present in debug
+  // Returns None on release.
+  fn get_search_query(&self) -> Option<&Line> {
+    let query = self
+      .search_info
+      .as_ref()
+      .and_then(|search_info| search_info.query.as_ref());
+
+    debug_assert!(
+      query.is_some(),
+      "Attempting to search with malformed searchinfo present"
+    );
+
+    query
   }
 
   /// Start the search from the given location
-  fn search_from(&mut self, from: Location) {
-    // Get the search info refrence if available
-    if let Some(search_info) = self.search_info.as_ref() {
-      let query = &search_info.query;
-      // If the query is empty, do nothing
+  fn search_in_direction(&mut self, from: Location, direction: SearchDirection) {
+    if let Some(location) = self.get_search_query().and_then(|query| {
       if query.is_empty() {
-        return;
+        None
+      } else if direction == SearchDirection::Forward {
+        self.buffer.search_forward(query, from)
+      } else {
+        self.buffer.search_backward(query, from)
       }
-
-      // Search from the current location
-      if let Some(location) = self.buffer.search(query, from) {
-        // Set the search info refrence to the new location
-        self.text_location = location;
-        self.center_text_location();
-      }
-    } else {
-      // If there is no search info, then panic
-      #[cfg(debug_assertions)]
-      {
-        panic!("Attempting to search_from without search_info");
-      }
+    }) {
+      self.text_location = location;
+      self.center_text_location();
     }
   }
 
   pub fn search_next(&mut self) {
-    let step_right;
+    let step_right = self
+      .get_search_query()
+      .map_or(1, |query| min(query.grapheme_count(), 1));
 
-    if let Some(search_info) = self.search_info.as_ref() {
-      step_right = min(search_info.query.grapheme_count(), 1);
-    } else {
-      #[cfg(debug_assertions)]
-      {
-        panic!("Attempting to search_next without search_info");
-      }
-      #[cfg(not(debug_assertions))]
-      {
-        return;
-      }
-    }
     let location = Location {
       line_idx: self.text_location.line_idx,
       grapheme_idx: self.text_location.grapheme_idx.saturating_add(step_right),
     };
-    self.search_from(location);
+    self.search_in_direction(location, SearchDirection::Forward);
+  }
+
+  pub fn search_prev(&mut self) {
+    self.search_in_direction(self.text_location, SearchDirection::Backward);
   }
 
   // endregion
