@@ -164,17 +164,15 @@ impl Line {
     self.insert_char(character, self.grapheme_count());
   }
 
-  /// Delete an char
   pub fn delete(&mut self, at: usize) {
-    let mut result = String::new();
-
-    for (index, fragment) in self.fragments.iter().enumerate() {
-      if index != at {
-        result.push_str(&fragment.grapheme);
-      }
+    if let Some(fragment) = self.fragments.get(at) {
+      let start = fragment.start_byte_idx;
+      let end = fragment
+        .start_byte_idx
+        .saturating_add(fragment.grapheme.len());
+      self.string.drain(start..end);
+      self.rebuild_fragments();
     }
-
-    self.fragments = Self::str_to_fragments(&result);
   }
 
   pub fn delete_last(&mut self) {
