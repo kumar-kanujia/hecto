@@ -1,3 +1,4 @@
+mod annotatedstring;
 mod command;
 mod commandarbar;
 mod documentstatus;

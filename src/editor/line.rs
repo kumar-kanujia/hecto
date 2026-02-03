@@ -1,3 +1,6 @@
+mod graphemewidth;
+mod textfragment;
+
 use std::{
   fmt::{Display, Formatter, Result},
   ops::{Deref, Range},
