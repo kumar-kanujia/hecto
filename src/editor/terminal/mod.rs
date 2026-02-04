@@ -1,10 +1,17 @@
-use crate::editor::{position::Position, size::Size};
+mod attribute;
+
+use crate::editor::{
+  annotatedstring::AnnotatedString, position::Position, size::Size, terminal::attribute::Attribute,
+};
 
 use crossterm::{
   Command,
   cursor::{Hide, MoveTo, Show},
   queue,
-  style::{Attribute, Print},
+  style::{
+    Attribute::{Reset, Reverse},
+    Print, ResetColor, SetBackgroundColor, SetForegroundColor,
+  },
   terminal::{
     Clear, ClearType, DisableLineWrap, EnableLineWrap, EnterAlternateScreen, LeaveAlternateScreen,
     SetTitle, disable_raw_mode, enable_raw_mode, size,
@@ -103,24 +110,6 @@ impl Terminal {
     Ok(())
   }
 
-  pub fn print(string: &str) -> Result<(), Error> {
-    Self::queue_command(Print(string))?;
-    Ok(())
-  }
-
-  pub fn print_inverted_row(row: usize, line_text: &str) -> Result<(), Error> {
-    let width = Self::size()?.width;
-    Self::print_row(
-      row,
-      &format!(
-        "{}{:width$.width$}{}",
-        Attribute::Reverse,
-        line_text,
-        Attribute::Reset
-      ),
-    )
-  }
-
   /// Returns the current size of this Terminal.
   /// Edge Case for systems with `usize` < `u16`:
   /// * A `Size` representing the terminal size. Any coordinate `z` truncated to `usize` if `usize` < `z` < `u16`
@@ -135,10 +124,57 @@ impl Terminal {
     Ok(Size { height, width })
   }
 
+  pub fn print(string: &str) -> Result<(), Error> {
+    Self::queue_command(Print(string))?;
+    Ok(())
+  }
+
   pub fn print_row(row: usize, line_text: &str) -> Result<(), Error> {
     Self::move_caret_to(Position { col: 0, row })?;
     Self::clear_line()?;
     Self::print(line_text)?;
+    Ok(())
+  }
+
+  pub fn print_inverted_row(row: usize, line_text: &str) -> Result<(), Error> {
+    let width = Self::size()?.width;
+    Self::print_row(row, &format!("{Reverse}{line_text:width$.width$}{Reset}"))
+  }
+
+  /// Applies attribute content to the terminal
+  fn set_attribute(attribute: &Attribute) -> Result<(), Error> {
+    if let Some(foreground_color) = attribute.foreground {
+      Self::queue_command(SetForegroundColor(foreground_color))?;
+    }
+    if let Some(background_color) = attribute.background {
+      Self::queue_command(SetBackgroundColor(background_color))?;
+    }
+    Ok(())
+  }
+
+  /// Reset any styling that might be active
+  fn reset_color() -> Result<(), Error> {
+    Self::queue_command(ResetColor)?;
+    Ok(())
+  }
+
+  /// Takes annotated string and prints it into a row
+  pub fn print_annotated_row(row: usize, annotated_string: &AnnotatedString) -> Result<(), Error> {
+    Self::move_caret_to(Position { col: 0, row })?;
+
+    Self::clear_line()?;
+
+    annotated_string
+      .into_iter()
+      .try_for_each(|part| -> Result<(), Error> {
+        if let Some(annotation_type) = part.annotation_type {
+          let attribute: Attribute = annotation_type.into();
+          Self::set_attribute(&attribute)?;
+        }
+        Self::print(part.string)?;
+        Self::reset_color()?;
+        Ok(())
+      })?;
     Ok(())
   }
 }

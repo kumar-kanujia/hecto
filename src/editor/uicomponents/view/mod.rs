@@ -1,6 +1,7 @@
 mod buffer;
 mod fileinfo;
 mod location;
+mod searchdirection;
 mod searchinfo;
 
 use crate::editor::{
@@ -11,18 +12,15 @@ use crate::editor::{
   position::{Col, Position, Row},
   size::Size,
   terminal::Terminal,
-  uicomponent::UIComponent,
-  view::{buffer::Buffer, location::Location, searchinfo::SearchInfo},
+  uicomponents::{
+    UIComponent,
+    view::{
+      buffer::Buffer, location::Location, searchdirection::SearchDirection, searchinfo::SearchInfo,
+    },
+  },
 };
 
 use std::{cmp::min, io::Error};
-
-#[derive(Default, Eq, PartialEq, Clone, Copy)]
-pub enum SearchDirection {
-  #[default]
-  Forward,
-  Backward,
-}
 
 #[derive(Default)]
 pub struct View {
@@ -333,6 +331,7 @@ impl View {
 
   pub fn exit_search(&mut self) {
     self.search_info = None;
+    self.set_needs_redraw(true);
   }
 
   pub fn dismiss_search(&mut self) {
@@ -345,6 +344,7 @@ impl View {
       self.scroll_text_location_into_view();
     }
     self.search_info = None;
+    self.set_needs_redraw(true);
   }
 
   pub fn search(&mut self, query: &str) {
@@ -385,6 +385,7 @@ impl View {
       self.text_location = location;
       self.center_text_location();
     }
+    self.set_needs_redraw(true);
   }
 
   pub fn search_next(&mut self) {
@@ -436,7 +437,19 @@ impl UIComponent for View {
       if let Some(line) = self.buffer.lines.get(line_idx) {
         let left = self.scroll_offset.col;
         let right = self.scroll_offset.col.saturating_add(width);
-        Self::render_line(current_row, &line.get_visible_graphemes(left..right))?;
+
+        let query = self
+          .search_info
+          .as_ref()
+          .and_then(|search_info| search_info.query.as_deref());
+
+        let selected_match = (self.text_location.line_idx == line_idx && query.is_some())
+          .then_some(self.text_location.grapheme_idx);
+
+        Terminal::print_annotated_row(
+          current_row,
+          &line.get_annotated_visible_substr(left..right, query, selected_match),
+        )?;
       } else if current_row == top_third && self.buffer.is_empty() {
         Self::render_line(current_row, &Self::build_welcome_message(width))?;
       } else {

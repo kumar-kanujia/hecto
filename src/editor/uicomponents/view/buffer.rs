@@ -1,6 +1,6 @@
 use crate::editor::{
   line::Line,
-  view::{Location, fileinfo::FileInfo},
+  uicomponents::view::{fileinfo::FileInfo, location::Location},
 };
 
 use std::{
@@ -141,6 +141,7 @@ impl Buffer {
       .cycle()
       .skip(from.line_idx)
       .take(self.lines.len().saturating_add(1))
+    //taking one more, to search the current line twice (once from the middle, once from the start)
     {
       let from_grapheme_idx = if is_first {
         is_first = false;
