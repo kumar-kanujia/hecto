@@ -220,7 +220,7 @@ impl Line {
     self.fragments.len()
   }
 
-  pub fn width_until(&self, grapheme_idx: GraphemeIdx) -> GraphemeIdx {
+  pub fn width_until(&self, grapheme_idx: GraphemeIdx) -> ColIdx {
     self
       .fragments
       .iter()
@@ -232,7 +232,7 @@ impl Line {
       .sum()
   }
 
-  pub fn width(&self) -> GraphemeIdx {
+  pub fn width(&self) -> ColIdx {
     self.width_until(self.grapheme_count())
   }
 
@@ -297,7 +297,7 @@ impl Line {
     self
       .fragments
       .iter()
-      .position(|fragment| fragment.start_byte_idx > byte_idx)
+      .position(|fragment| fragment.start_byte_idx >= byte_idx)
   }
 
   /// Convert a grapheme index to a byte index
@@ -375,6 +375,7 @@ impl Line {
         substr
           .match_indices(query) // find _potential_ matches within the substring
           .filter_map(|(relative_start_idx, _)| {
+            //convert their relative indices to absolute indices
             let absolute_start_idx = relative_start_idx.saturating_add(start_byte_idx);
 
             self
