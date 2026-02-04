@@ -1,4 +1,3 @@
-/// AnnotationType enum
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub enum AnnotationType {
   /// A regular match

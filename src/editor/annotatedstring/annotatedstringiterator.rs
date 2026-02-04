@@ -2,9 +2,9 @@ use crate::editor::annotatedstring::{AnnotatedString, annotatedstringpart::Annot
 
 use std::cmp::min;
 
-/// Iterator returned by AnnotatedString
+/// Iterator returned by `AnnotatedString`
 pub struct AnnotatedStringIterator<'a> {
-  /// Reference to the AnnotatedString with an liftime valid till the end of the iterator
+  /// Reference to the `AnnotatedString` with an liftime valid till the end of the iterator
   pub annotated_string: &'a AnnotatedString,
   /// Keep track of current byte index
   pub current_idx: usize,
@@ -31,11 +31,10 @@ impl<'a> Iterator for AnnotatedStringIterator<'a> {
       // Filter out all annotation that does not return true
       // It filter out active annotation
       // ___ |_↓_| ___
-      .filter(|annotation| {
+      // Search from back take the first one
+      .rfind(|annotation| {
         annotation.start_byte_idx <= self.current_idx && annotation.end_byte_idx > self.current_idx
       })
-      // In case of mutiple take last
-      .last()
     {
       // Start and end of the string slice at which annonation ends
       let start_idx = self.current_idx;

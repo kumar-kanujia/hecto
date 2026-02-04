@@ -1,12 +1,12 @@
-use crate::editor::annotatedstring::{
-  annotatedstringiterator::AnnotatedStringIterator, annotatedstringpart::AnnotatedStringPart,
-  annotation::Annotation, annotationtype::AnnotationType,
-};
-
 pub mod annotatedstringiterator;
 pub mod annotatedstringpart;
 pub mod annotation;
 pub mod annotationtype;
+
+use crate::editor::annotatedstring::{
+  annotatedstringiterator::AnnotatedStringIterator, annotatedstringpart::AnnotatedStringPart,
+  annotation::Annotation, annotationtype::AnnotationType,
+};
 
 use std::{
   cmp::{max, min},
