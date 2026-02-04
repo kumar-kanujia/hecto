@@ -1,4 +1,4 @@
-use crate::editor::{size::Size, terminal::Terminal, uicomponent::UIComponent};
+use crate::editor::{size::Size, terminal::Terminal, uicomponents::UIComponent};
 
 use std::{
   io::Error,

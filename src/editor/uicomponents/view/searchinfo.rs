@@ -1,4 +1,4 @@
-use crate::editor::{line::Line, position::Position, view::location::Location};
+use crate::editor::{line::Line, position::Position, uicomponents::view::location::Location};
 
 pub struct SearchInfo {
   pub prev_location: Location,

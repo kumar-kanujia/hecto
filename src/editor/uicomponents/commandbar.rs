@@ -1,5 +1,5 @@
 use crate::editor::{
-  command::Edit, line::Line, size::Size, terminal::Terminal, uicomponent::UIComponent,
+  command::Edit, line::Line, size::Size, terminal::Terminal, uicomponents::UIComponent,
 };
 
 use std::{cmp::min, io::Error};

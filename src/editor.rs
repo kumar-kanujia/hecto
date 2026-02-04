@@ -1,15 +1,11 @@
 mod annotatedstring;
 mod command;
-mod commandarbar;
 mod documentstatus;
 mod line;
-mod messagebar;
 mod position;
 mod size;
-mod statusbar;
 mod terminal;
-mod uicomponent;
-mod view;
+mod uicomponents;
 
 use crate::editor::{
   command::{
@@ -18,14 +14,10 @@ use crate::editor::{
     Move::{Down, Left, Right, Up},
     System::{Dismiss, Quit, Resize, Save, Search},
   },
-  commandarbar::CommandBar,
-  messagebar::MessageBar,
   position::Position,
   size::Size,
-  statusbar::StatusBar,
   terminal::Terminal,
-  uicomponent::UIComponent,
-  view::View,
+  uicomponents::{CommandBar, MessageBar, StatusBar, UIComponent, View},
 };
 
 use crossterm::event::{Event, KeyEvent, KeyEventKind, read};

@@ -1,5 +1,5 @@
 use crate::editor::{
-  documentstatus::DocumentStatus, size::Size, terminal::Terminal, uicomponent::UIComponent,
+  documentstatus::DocumentStatus, size::Size, terminal::Terminal, uicomponents::UIComponent,
 };
 
 #[derive(Default)]
