@@ -170,9 +170,9 @@ impl Terminal {
         if let Some(annotation_type) = part.annotation_type {
           let attribute: Attribute = annotation_type.into();
           Self::set_attribute(&attribute)?;
-          Self::print(part.string)?;
-          Self::reset_color()?;
         }
+        Self::print(part.string)?;
+        Self::reset_color()?;
         Ok(())
       })?;
     Ok(())

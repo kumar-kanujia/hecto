@@ -23,7 +23,7 @@ impl From<AnnotationType> for Attribute {
           b: 100,
         }),
       },
-      AnnotationType::SelectMatch => Self {
+      AnnotationType::SelectedMatch => Self {
         foreground: Some(Color::Rgb {
           r: 255,
           g: 255,

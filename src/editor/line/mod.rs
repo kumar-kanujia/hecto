@@ -137,7 +137,7 @@ impl Line {
             // Check if the annotation is for selected match
             if *grapheme_idx == selected_match {
               result.add_annotation(
-                AnnotationType::SelectMatch,
+                AnnotationType::SelectedMatch,
                 *start_byte_idx,
                 start_byte_idx.saturating_add(query.len()),
               );

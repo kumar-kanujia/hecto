@@ -442,7 +442,8 @@ impl UIComponent for View {
           .search_info
           .as_ref()
           .and_then(|search_info| search_info.query.as_deref());
-        let selected_match = (self.text_location.line_idx == line_idx && query.is_none())
+
+        let selected_match = (self.text_location.line_idx == line_idx && query.is_some())
           .then_some(self.text_location.grapheme_idx);
 
         Terminal::print_annotated_row(

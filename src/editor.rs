@@ -332,6 +332,7 @@ impl Editor {
   // endregion
 
   // region search command & prompt handling
+
   fn process_command_during_search(&mut self, command: Command) {
     match command {
       System(Dismiss) => {
