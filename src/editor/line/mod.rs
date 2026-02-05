@@ -351,28 +351,55 @@ impl Line {
       .map(|(_, grapheme_idx)| *grapheme_idx)
   }
 
+  fn match_graphme_clusters(
+    &self,
+    matches: &[ByteIdx],
+    query: &str,
+  ) -> Vec<(ByteIdx, GraphemeIdx)> {
+    let grapheme_count = query.graphemes(true).count();
+    matches
+      .iter()
+      .filter_map(|&start| {
+        self
+          .byte_idx_to_grapheme_idx(start)
+          .and_then(|grapheme_idx| {
+            self
+              .fragments
+              .get(grapheme_idx..grapheme_idx.saturating_add(grapheme_count))
+              .and_then(|fragment| {
+                // combine the fragments into a single string
+                let substring = fragment
+                  .iter()
+                  .map(|fragment| fragment.grapheme.as_str())
+                  .collect::<String>();
+                // if combined string matches query, return the start and grapheme count
+                (substring == query).then_some((start, grapheme_count))
+              })
+          })
+      })
+      .collect()
+  }
+
   /// Given a search query and a range in byte indices
   /// return a vector of pairs of byte indices and grapheme indices of match
   fn find_all(&self, query: &str, range: Range<ByteIdx>) -> Vec<(ByteIdx, GraphemeIdx)> {
-    let start_byte_idx = range.start;
-    let end_byte_idx = range.end;
+    let start = range.start;
+    let end = min(range.end, self.string.len());
 
-    self
-      .string
-      .get(start_byte_idx..end_byte_idx)
-      .map_or_else(Vec::new, |substr| {
-        substr
-          .match_indices(query) // find _potential_ matches within the substring
-          .filter_map(|(relative_start_idx, _)| {
-            //convert their relative indices to absolute indices
-            let absolute_start_idx = relative_start_idx.saturating_add(start_byte_idx);
+    debug_assert!(start <= end);
+    debug_assert!(start <= self.string.len());
 
-            self
-              .byte_idx_to_grapheme_idx(absolute_start_idx)
-              .map(|grapheme_idx| (absolute_start_idx, grapheme_idx))
-          })
-          .collect()
-      })
+    self.string.get(start..end).map_or_else(Vec::new, |substr| {
+      let potential_matches: Vec<ByteIdx> = substr
+        .match_indices(query) // find _potential_ matches within the substring
+        .map(|(relative_start, _)| {
+          //convert their relative indices to absolute indices
+          relative_start.saturating_add(start)
+        })
+        .collect();
+      //convert the potential matches into matches which align with the grapheme boundaries.
+      self.match_graphme_clusters(&potential_matches, query)
+    })
   }
 }
 
