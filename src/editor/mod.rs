@@ -2,22 +2,21 @@ mod annotatedstring;
 mod command;
 mod documentstatus;
 mod line;
-mod position;
-mod size;
 mod terminal;
 mod uicomponents;
 
-use crate::editor::{
-  command::{
-    Command::{self, Edit, Move, System},
-    Edit::InsertNewline,
-    Move::{Down, Left, Right, Up},
-    System::{Dismiss, Quit, Resize, Save, Search},
+use crate::{
+  editor::{
+    command::{
+      Command::{self, Edit, Move, System},
+      Edit::InsertNewline,
+      Move::{Down, Left, Right, Up},
+      System::{Dismiss, Quit, Resize, Save, Search},
+    },
+    terminal::Terminal,
+    uicomponents::{CommandBar, MessageBar, StatusBar, UIComponent, View},
   },
-  position::Position,
-  size::Size,
-  terminal::Terminal,
-  uicomponents::{CommandBar, MessageBar, StatusBar, UIComponent, View},
+  prelude::*,
 };
 
 use crossterm::event::{Event, KeyEvent, KeyEventKind, read};
@@ -27,9 +26,6 @@ use std::{
   io::Error,
   panic::{set_hook, take_hook},
 };
-
-pub const NAME: &str = env!("CARGO_PKG_NAME");
-pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 const QUIT_TIMES: u8 = 3;
 

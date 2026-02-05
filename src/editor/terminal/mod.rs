@@ -1,7 +1,8 @@
 mod attribute;
 
-use crate::editor::{
-  annotatedstring::AnnotatedString, position::Position, size::Size, terminal::attribute::Attribute,
+use crate::{
+  editor::{annotatedstring::AnnotatedString, terminal::attribute::Attribute},
+  prelude::{Position, RowIdx, Size},
 };
 
 use crossterm::{
@@ -129,14 +130,14 @@ impl Terminal {
     Ok(())
   }
 
-  pub fn print_row(row: usize, line_text: &str) -> Result<(), Error> {
+  pub fn print_row(row: RowIdx, line_text: &str) -> Result<(), Error> {
     Self::move_caret_to(Position { col: 0, row })?;
     Self::clear_line()?;
     Self::print(line_text)?;
     Ok(())
   }
 
-  pub fn print_inverted_row(row: usize, line_text: &str) -> Result<(), Error> {
+  pub fn print_inverted_row(row: RowIdx, line_text: &str) -> Result<(), Error> {
     let width = Self::size()?.width;
     Self::print_row(row, &format!("{Reverse}{line_text:width$.width$}{Reset}"))
   }
@@ -159,7 +160,7 @@ impl Terminal {
   }
 
   /// Takes annotated string and prints it into a row
-  pub fn print_annotated_row(row: usize, annotated_string: &AnnotatedString) -> Result<(), Error> {
+  pub fn print_annotated_row(row: RowIdx, annotated_string: &AnnotatedString) -> Result<(), Error> {
     Self::move_caret_to(Position { col: 0, row })?;
 
     Self::clear_line()?;

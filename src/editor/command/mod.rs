@@ -2,9 +2,9 @@ pub mod edit;
 pub mod movecommand;
 pub mod system;
 
-pub use crate::editor::{
-  command::{edit::Edit, movecommand::Move, system::System},
-  size::Size,
+pub use crate::{
+  editor::command::{edit::Edit, movecommand::Move, system::System},
+  prelude::*,
 };
 
 use crossterm::event::Event;
