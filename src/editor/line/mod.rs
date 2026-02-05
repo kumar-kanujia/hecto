@@ -351,12 +351,20 @@ impl Line {
       .map(|(_, grapheme_idx)| *grapheme_idx)
   }
 
+  /// Finds all matches which align with grapheme boundaries.
+  /// Parameters:
+  /// - `query`: The query to search for.
+  /// - `matches`: A vector of byte indices of potential matches, which might or might not align with the grapheme clusters.
+  /// Returns:
+  /// A `Vec` of `(byte_index, grapheme_idx)` pairs for each match that alignes with the grapheme clusters, where byte_index is the byte index of the match, and grapheme_idx is the grapheme index of the match.
   fn match_graphme_clusters(
     &self,
     matches: &[ByteIdx],
     query: &str,
   ) -> Vec<(ByteIdx, GraphemeIdx)> {
+    // Count graphemes in query
     let grapheme_count = query.graphemes(true).count();
+
     matches
       .iter()
       .filter_map(|&start| {
@@ -366,14 +374,14 @@ impl Line {
             self
               .fragments
               .get(grapheme_idx..grapheme_idx.saturating_add(grapheme_count))
-              .and_then(|fragment| {
+              .and_then(|fragments| {
                 // combine the fragments into a single string
-                let substring = fragment
+                let substring = fragments
                   .iter()
                   .map(|fragment| fragment.grapheme.as_str())
                   .collect::<String>();
                 // if combined string matches query, return the start and grapheme count
-                (substring == query).then_some((start, grapheme_count))
+                (substring == query).then_some((start, grapheme_idx))
               })
           })
       })
@@ -390,6 +398,7 @@ impl Line {
     debug_assert!(start <= self.string.len());
 
     self.string.get(start..end).map_or_else(Vec::new, |substr| {
+      // Byte idx of all the potential match
       let potential_matches: Vec<ByteIdx> = substr
         .match_indices(query) // find _potential_ matches within the substring
         .map(|(relative_start, _)| {
