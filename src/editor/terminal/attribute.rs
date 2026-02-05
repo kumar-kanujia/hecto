@@ -1,6 +1,6 @@
 use crossterm::style::Color;
 
-use crate::editor::annotatedstring::annotationtype::AnnotationType;
+use crate::editor::annotationtype::AnnotationType;
 
 /// Defines an attribute which the terminal can use
 pub struct Attribute {

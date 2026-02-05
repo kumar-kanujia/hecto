@@ -1,12 +1,13 @@
 pub mod annotatedstringiterator;
 pub mod annotatedstringpart;
-pub mod annotation;
-pub mod annotationtype;
 
 use crate::{
-  editor::annotatedstring::{
-    annotatedstringiterator::AnnotatedStringIterator, annotatedstringpart::AnnotatedStringPart,
-    annotation::Annotation, annotationtype::AnnotationType,
+  editor::{
+    annotatedstring::{
+      annotatedstringiterator::AnnotatedStringIterator, annotatedstringpart::AnnotatedStringPart,
+    },
+    annotation::Annotation,
+    annotationtype::AnnotationType,
   },
   prelude::ByteIdx,
 };

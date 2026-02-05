@@ -1,4 +1,4 @@
-use crate::editor::annotatedstring::annotationtype::AnnotationType;
+use crate::editor::annotationtype::AnnotationType;
 
 /// A part of `AnnotatedString`
 #[derive(Debug)]

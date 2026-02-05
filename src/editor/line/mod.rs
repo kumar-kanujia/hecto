@@ -3,7 +3,8 @@ mod textfragment;
 
 use crate::{
   editor::{
-    annotatedstring::{AnnotatedString, annotationtype::AnnotationType},
+    annotatedstring::AnnotatedString,
+    annotation::Annotation,
     line::{graphemewidth::GraphemeWidth, textfragment::TextFragment},
   },
   prelude::*,
@@ -95,27 +96,15 @@ impl Line {
     }
   }
 
-  // Gets the visible graphemes in the given column index.
-  // Note that the column index is not the same as the grapheme index:
-  // A grapheme can have a width of 2 columns.
-  pub fn get_visible_graphemes(&self, range: Range<ColIdx>) -> String {
-    self
-      .get_annotated_visible_substr(range, None, None)
-      .to_string()
-  }
-
   /// Get the annotated string in the given column index.
   /// Note that the column index is not the same as the grapheme index:
   /// A grapheme can have a width of 2 columns.
   /// Parameters:
   /// - `range`: The range of columns to get the annotated string from.
-  /// - `query`: The query to highlight in the annotated string.
-  /// - `selected_match`: The selected match to highlight in the annotated string. This is only applied if the query is not empty.
   pub fn get_annotated_visible_substr(
     &self,
     range: Range<ColIdx>,
-    query: Option<&str>,
-    selected_match: Option<GraphemeIdx>,
+    annotations: Option<&Vec<Annotation>>,
   ) -> AnnotatedString {
     if range.start >= range.end {
       return AnnotatedString::default();
@@ -124,44 +113,15 @@ impl Line {
     // Create a new annotated string (annotaion is not present here)
     let mut result = AnnotatedString::from(&self.string);
 
-    // Highlight digits
-    self.string.chars().enumerate().for_each(|(idx, ch)| {
-      if ch.is_ascii_digit() {
-        result.add_annotation(AnnotationType::Digit, idx, idx.saturating_add(1));
+    // Apply annotation for this string
+    if let Some(annotations) = annotations {
+      for annotation in annotations {
+        result.add_annotation(annotation.annotation_type, annotation.start, annotation.end);
       }
-    });
-
-    // Annotate result based on the query
-    if let Some(query) = query
-      && !query.is_empty()
-    {
-      self
-        .find_all(query, 0..self.string.len())
-        .iter()
-        .for_each(|(start, grapheme_idx)| {
-          // Check if select_match is passed to the function
-          if let Some(selected_match) = selected_match {
-            // Check if the annotation is for selected match
-            if *grapheme_idx == selected_match {
-              result.add_annotation(
-                AnnotationType::SelectedMatch,
-                *start,
-                start.saturating_add(query.len()),
-              );
-              return;
-            }
-          }
-          result.add_annotation(
-            AnnotationType::Match,
-            *start,
-            start.saturating_add(query.len()),
-          );
-        });
     }
 
     // Insert replacement characters, and truncate if needed.
     // We do this backwards, otherwise the byte indices would be off in case a replacement character has a different width than the original character.
-
     let mut fragment_start = self.width();
 
     for fragment in self.fragments.iter().rev() {
@@ -212,6 +172,13 @@ impl Line {
     }
 
     result
+  }
+
+  // Gets the visible graphemes in the given column index.
+  // Note that the column index is not the same as the grapheme index:
+  // A grapheme can have a width of 2 columns.
+  pub fn get_visible_graphemes(&self, range: Range<ColIdx>) -> String {
+    self.get_annotated_visible_substr(range, None).to_string()
   }
 
   pub fn grapheme_count(&self) -> GraphemeIdx {
@@ -398,7 +365,7 @@ impl Line {
 
   /// Given a search query and a range in byte indices
   /// return a vector of pairs of byte indices and grapheme indices of match
-  fn find_all(&self, query: &str, range: Range<ByteIdx>) -> Vec<(ByteIdx, GraphemeIdx)> {
+  pub fn find_all(&self, query: &str, range: Range<ByteIdx>) -> Vec<(ByteIdx, GraphemeIdx)> {
     let start = range.start;
     let end = min(range.end, self.string.len());
 

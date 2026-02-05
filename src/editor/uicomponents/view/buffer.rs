@@ -1,23 +1,65 @@
 use crate::{
-  editor::{line::Line, uicomponents::view::fileinfo::FileInfo},
-  prelude::Location,
+  editor::{
+    annotatedstring::AnnotatedString,
+    line::Line,
+    uicomponents::view::{fileinfo::FileInfo, highlighter::Highlighter},
+  },
+  prelude::*,
 };
 
 use std::{
   fs::{File, read_to_string},
   io::{Error, Write},
+  ops::Range,
 };
 
 #[derive(Default)]
 pub struct Buffer {
   /// Store line as an vector
-  pub lines: Vec<Line>,
-  pub file_info: FileInfo,
+  lines: Vec<Line>,
+  file_info: FileInfo,
   /// Marked true if there is chnage in original buffer
-  pub dirty: bool,
+  dirty: bool,
 }
 
 impl Buffer {
+  pub const fn is_dirty(&self) -> bool {
+    self.dirty
+  }
+
+  pub const fn get_file_info(&self) -> &FileInfo {
+    &self.file_info
+  }
+
+  pub fn grapheme_count(&self, idx: LineIdx) -> GraphemeIdx {
+    self.lines.get(idx).map_or(0, Line::grapheme_count)
+  }
+
+  pub fn width_until(&self, idx: LineIdx, until: GraphemeIdx) -> GraphemeIdx {
+    self
+      .lines
+      .get(idx)
+      .map_or(0, |line| line.width_until(until))
+  }
+
+  pub fn get_highlighted_substring(
+    &self,
+    line_idx: LineIdx,
+    range: Range<GraphemeIdx>,
+    highlighter: &Highlighter,
+  ) -> Option<AnnotatedString> {
+    self
+      .lines
+      .get(line_idx)
+      .map(|line| line.get_annotated_visible_substr(range, highlighter.get_annotations(line_idx)))
+  }
+
+  pub fn highlight(&self, idx: LineIdx, highlighter: &mut Highlighter) {
+    if let Some(line) = self.lines.get(idx) {
+      highlighter.highlight(idx, line);
+    }
+  }
+
   pub fn load(file_name: &str) -> Result<Self, Error> {
     let contents = read_to_string(file_name)?;
     let mut lines = Vec::new();
@@ -69,7 +111,7 @@ impl Buffer {
   }
 
   /// Return total height covered by buffer
-  pub fn height(&self) -> usize {
+  pub fn height(&self) -> LineIdx {
     self.lines.len()
   }
 
