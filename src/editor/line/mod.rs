@@ -355,8 +355,9 @@ impl Line {
   /// Parameters:
   /// - `query`: The query to search for.
   /// - `matches`: A vector of byte indices of potential matches, which might or might not align with the grapheme clusters.
-  /// Returns:
-  /// A `Vec` of `(byte_index, grapheme_idx)` pairs for each match that alignes with the grapheme clusters, where byte_index is the byte index of the match, and grapheme_idx is the grapheme index of the match.
+  /// - `Returns: Vec<(ByteIdx, GraphemeIdx)> `
+  ///
+  /// A `Vec` of `(byte_index, grapheme_idx)` pairs for each match that alignes with the grapheme clusters, where `byte_index` is the byte index of the match, and `grapheme_idx` is the grapheme index of the match.
   fn match_graphme_clusters(
     &self,
     matches: &[ByteIdx],
