@@ -3,6 +3,7 @@ mod annotation;
 mod annotationtype;
 mod command;
 mod documentstatus;
+mod filetype;
 mod line;
 mod terminal;
 mod uicomponents;
