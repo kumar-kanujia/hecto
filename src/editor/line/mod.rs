@@ -124,6 +124,13 @@ impl Line {
     // Create a new annotated string (annotaion is not present here)
     let mut result = AnnotatedString::from(&self.string);
 
+    // Highlight digits
+    self.string.chars().enumerate().for_each(|(idx, ch)| {
+      if ch.is_ascii_digit() {
+        result.add_annotation(AnnotationType::Digit, idx, idx.saturating_add(1));
+      }
+    });
+
     // Annotate result based on the query
     if let Some(query) = query
       && !query.is_empty()
