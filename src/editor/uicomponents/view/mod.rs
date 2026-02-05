@@ -1,23 +1,21 @@
 mod buffer;
 mod fileinfo;
-mod location;
 mod searchdirection;
 mod searchinfo;
 
-use crate::editor::{
-  NAME, VERSION,
-  command::{Edit, Move},
-  documentstatus::DocumentStatus,
-  line::Line,
-  position::{Col, Position, Row},
-  size::Size,
-  terminal::Terminal,
-  uicomponents::{
-    UIComponent,
-    view::{
-      buffer::Buffer, location::Location, searchdirection::SearchDirection, searchinfo::SearchInfo,
+use crate::{
+  editor::{
+    NAME, VERSION,
+    command::{Edit, Move},
+    documentstatus::DocumentStatus,
+    line::Line,
+    terminal::Terminal,
+    uicomponents::{
+      UIComponent,
+      view::{buffer::Buffer, searchdirection::SearchDirection, searchinfo::SearchInfo},
     },
   },
+  prelude::*,
 };
 
 use std::{cmp::min, io::Error};
@@ -142,7 +140,7 @@ impl View {
 
   // region: Rendering
 
-  fn render_line(at: usize, line_text: &str) -> Result<(), Error> {
+  fn render_line(at: RowIdx, line_text: &str) -> Result<(), Error> {
     Terminal::print_row(at, line_text)
   }
 
@@ -164,7 +162,7 @@ impl View {
 
   // region: Scrolling
 
-  fn scroll_vertically(&mut self, to: Row) {
+  fn scroll_vertically(&mut self, to: RowIdx) {
     let Size { height, .. } = self.size;
     let offset_changed = if to < self.scroll_offset.row {
       self.scroll_offset.row = to;
@@ -180,7 +178,7 @@ impl View {
     }
   }
 
-  fn scroll_horizontally(&mut self, to: Col) {
+  fn scroll_horizontally(&mut self, to: ColIdx) {
     let Size { width, .. } = self.size;
     let offset_changed = if to < self.scroll_offset.col {
       self.scroll_offset.col = to;
@@ -343,8 +341,7 @@ impl View {
       // ensure the previous location is still visible even if the terminal has been resized during search.
       self.scroll_text_location_into_view();
     }
-    self.search_info = None;
-    self.set_needs_redraw(true);
+    self.exit_search();
   }
 
   pub fn search(&mut self, query: &str) {
@@ -421,7 +418,7 @@ impl UIComponent for View {
     self.scroll_text_location_into_view();
   }
 
-  fn draw(&mut self, origin_row: usize) -> Result<(), Error> {
+  fn draw(&mut self, origin_row: RowIdx) -> Result<(), Error> {
     let Size { height, width } = self.size;
     let end_y = origin_row.saturating_add(height);
     let top_third = height.div_ceil(3);

@@ -1,6 +1,6 @@
 use std::io::Error;
 
-use crate::editor::size::Size;
+use crate::prelude::{RowIdx, Size};
 
 /// Trait to be used by all ui Components like `view` , `message_bar`
 pub trait UIComponent {
@@ -23,7 +23,7 @@ pub trait UIComponent {
   }
 
   // Draw this component if it's visible and in need of redrawing
-  fn render(&mut self, origin_row: usize) {
+  fn render(&mut self, origin_row: RowIdx) {
     if self.needs_redraw() {
       if let Err(err) = self.draw(origin_row) {
         #[cfg(debug_assertions)]

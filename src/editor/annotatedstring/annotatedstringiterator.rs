@@ -1,4 +1,5 @@
 use crate::editor::annotatedstring::{AnnotatedString, annotatedstringpart::AnnotatedStringPart};
+use crate::prelude::*;
 
 use std::cmp::min;
 
@@ -7,7 +8,7 @@ pub struct AnnotatedStringIterator<'a> {
   /// Reference to the `AnnotatedString` with an liftime valid till the end of the iterator
   pub annotated_string: &'a AnnotatedString,
   /// Keep track of current byte index
-  pub current_idx: usize,
+  pub current_idx: ByteIdx,
 }
 
 // Implimentation of Iterator trait
@@ -32,13 +33,12 @@ impl<'a> Iterator for AnnotatedStringIterator<'a> {
       // It filter out active annotation
       // ___ |_↓_| ___
       // Search from back take the first one
-      .rfind(|annotation| {
-        annotation.start_byte_idx <= self.current_idx && annotation.end_byte_idx > self.current_idx
-      })
+      .rfind(|annotation| annotation.start <= self.current_idx && annotation.end > self.current_idx)
     {
       // Start and end of the string slice at which annonation ends
       let start_idx = self.current_idx;
-      let end_idx = min(annotation.end_byte_idx, self.annotated_string.string.len());
+
+      let end_idx = min(annotation.end, self.annotated_string.string.len());
 
       // Advance the current index
       self.current_idx = end_idx;
@@ -54,8 +54,8 @@ impl<'a> Iterator for AnnotatedStringIterator<'a> {
     // If not found then end will be end of the string
     let mut end_idx = self.annotated_string.string.len();
     for annotation in &self.annotated_string.annotation {
-      if annotation.start_byte_idx > self.current_idx && annotation.start_byte_idx < end_idx {
-        end_idx = annotation.start_byte_idx;
+      if annotation.start > self.current_idx && annotation.start < end_idx {
+        end_idx = annotation.start;
       }
     }
 

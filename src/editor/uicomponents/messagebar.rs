@@ -1,4 +1,7 @@
-use crate::editor::{size::Size, terminal::Terminal, uicomponents::UIComponent};
+use crate::{
+  editor::{terminal::Terminal, uicomponents::UIComponent},
+  prelude::{RowIdx, Size},
+};
 
 use std::{
   io::Error,
@@ -58,7 +61,7 @@ impl UIComponent for MessageBar {
     is_message_cleared || self.need_redraw
   }
 
-  fn draw(&mut self, origin_y: usize) -> Result<(), Error> {
+  fn draw(&mut self, origin_y: RowIdx) -> Result<(), Error> {
     if self.current_message.is_expired() {
       // Upon expiration, we need to write out "" once to clear the message.
       // To avoid clearing more than necessary, we  keep track of the fact that we've already cleared the expired message once.

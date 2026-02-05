@@ -1,24 +1,22 @@
 mod graphemewidth;
 mod textfragment;
 
-use crate::editor::{
-  annotatedstring::{AnnotatedString, annotationtype::AnnotationType},
-  line::{graphemewidth::GraphemeWidth, textfragment::TextFragment},
+use crate::{
+  editor::{
+    annotatedstring::{AnnotatedString, annotationtype::AnnotationType},
+    line::{graphemewidth::GraphemeWidth, textfragment::TextFragment},
+  },
+  prelude::*,
 };
 
 use std::{
+  cmp::min,
   fmt::{Display, Formatter, Result},
   ops::{Deref, Range},
 };
 
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
-
-/// A grapheme index is a position in the line, where a grapheme is a unicode character.
-type GraphemeIdx = usize;
-/// A byte index is a position in the line, where a byte is a single byte.
-type ByteIdx = usize;
-type ColIdx = usize;
 
 #[derive(Default, Clone)]
 pub struct Line {
@@ -58,7 +56,7 @@ impl Line {
           grapheme: grapheme.to_string(),
           rendered_width,
           replacement,
-          start_byte_idx: byte_idx,
+          start: byte_idx,
         }
       })
       .collect()
@@ -130,27 +128,28 @@ impl Line {
     if let Some(query) = query
       && !query.is_empty()
     {
-      self.find_all(query, 0..self.string.len()).iter().for_each(
-        |(start_byte_idx, grapheme_idx)| {
+      self
+        .find_all(query, 0..self.string.len())
+        .iter()
+        .for_each(|(start, grapheme_idx)| {
           // Check if select_match is passed to the function
           if let Some(selected_match) = selected_match {
             // Check if the annotation is for selected match
             if *grapheme_idx == selected_match {
               result.add_annotation(
                 AnnotationType::SelectedMatch,
-                *start_byte_idx,
-                start_byte_idx.saturating_add(query.len()),
+                *start,
+                start.saturating_add(query.len()),
               );
               return;
             }
           }
           result.add_annotation(
             AnnotationType::Match,
-            *start_byte_idx,
-            start_byte_idx.saturating_add(query.len()),
+            *start,
+            start.saturating_add(query.len()),
           );
-        },
-      );
+        });
     }
 
     // Insert replacement characters, and truncate if needed.
@@ -170,32 +169,24 @@ impl Line {
 
       if fragment_start < range.end && fragment_end > range.end {
         // clip right if the fragment is partially visible
-        result.replace(fragment.start_byte_idx, self.string.len(), "⋯");
+        result.replace(fragment.start, self.string.len(), "⋯");
         continue;
       } else if fragment_start == range.end {
         // Truncate right if we've reached the end of the visible range
-        result.replace(fragment.start_byte_idx, self.string.len(), "");
+        result.truncate_right_from(fragment.start);
         continue;
       }
 
       if fragment_end <= range.start {
         // Fragment ends at the start of the range: Remove the entire left side of the string (if not already at start of string)
-        result.replace(
-          0,
-          fragment
-            .start_byte_idx
-            .saturating_add(fragment.grapheme.len()),
-          "",
-        );
+        result.truncate_left_until(fragment.start.saturating_add(fragment.grapheme.len()));
         //End processing since all remaining fragments will be invisible.
         break;
       } else if fragment_start < range.start && fragment_end > range.start {
         // Fragment overlaps with the start of range: Remove the left side of the string and add an ellipsis
         result.replace(
           0,
-          fragment
-            .start_byte_idx
-            .saturating_add(fragment.grapheme.len()),
+          fragment.start.saturating_add(fragment.grapheme.len()),
           "⋯",
         );
         //End processing since all remaining fragments will be invisible.
@@ -207,9 +198,9 @@ impl Line {
         && fragment_end <= range.end
         && let Some(replacement) = fragment.replacement
       {
-        let start_byte_idx = fragment.start_byte_idx;
-        let end_byte_idx = start_byte_idx.saturating_add(fragment.grapheme.len());
-        result.replace(start_byte_idx, end_byte_idx, &replacement.to_string());
+        let start = fragment.start;
+        let end = start.saturating_add(fragment.grapheme.len());
+        result.replace(start, end, &replacement.to_string());
       }
     }
 
@@ -241,7 +232,7 @@ impl Line {
     debug_assert!(at.saturating_sub(1) <= self.grapheme_count());
 
     if let Some(fragment) = self.fragments.get(at) {
-      self.string.insert(fragment.start_byte_idx, character);
+      self.string.insert(fragment.start, character);
     } else {
       self.string.push(character);
     }
@@ -257,10 +248,8 @@ impl Line {
     debug_assert!(at <= self.grapheme_count());
 
     if let Some(fragment) = self.fragments.get(at) {
-      let start = fragment.start_byte_idx;
-      let end = fragment
-        .start_byte_idx
-        .saturating_add(fragment.grapheme.len());
+      let start = fragment.start;
+      let end = fragment.start.saturating_add(fragment.grapheme.len());
       self.string.drain(start..end);
       self.rebuild_fragments();
     }
@@ -279,7 +268,7 @@ impl Line {
   /// Split the line at the give grrapheme index
   pub fn split(&mut self, at: GraphemeIdx) -> Self {
     if let Some(fragment) = self.fragments.get(at) {
-      let remainder = self.string.split_off(fragment.start_byte_idx);
+      let remainder = self.string.split_off(fragment.start);
       self.rebuild_fragments();
       Self::from(&remainder)
     } else {
@@ -297,7 +286,7 @@ impl Line {
     self
       .fragments
       .iter()
-      .position(|fragment| fragment.start_byte_idx >= byte_idx)
+      .position(|fragment| fragment.start >= byte_idx)
   }
 
   /// Convert a grapheme index to a byte index
@@ -319,7 +308,7 @@ impl Line {
           0
         }
       },
-      |fragment| fragment.start_byte_idx,
+      |fragment| fragment.start,
     )
   }
 
@@ -331,10 +320,10 @@ impl Line {
       return None;
     }
 
-    let start_byte_idx = self.grapheme_idx_to_byte_idx(from_grapheme_idx);
+    let start = self.grapheme_idx_to_byte_idx(from_grapheme_idx);
 
     self
-      .find_all(query, start_byte_idx..self.string.len())
+      .find_all(query, start..self.string.len())
       .first()
       .map(|(_, grapheme_idx)| *grapheme_idx)
   }
@@ -350,40 +339,76 @@ impl Line {
       return None;
     }
 
-    let end_byte_index = if from_grapheme_idx == self.grapheme_count() {
+    let end = if from_grapheme_idx == self.grapheme_count() {
       self.string.len()
     } else {
       self.grapheme_idx_to_byte_idx(from_grapheme_idx)
     };
 
     self
-      .find_all(query, 0..end_byte_index)
+      .find_all(query, 0..end)
       .last()
       .map(|(_, grapheme_idx)| *grapheme_idx)
+  }
+
+  /// Finds all matches which align with grapheme boundaries.
+  /// Parameters:
+  /// - `query`: The query to search for.
+  /// - `matches`: A vector of byte indices of potential matches, which might or might not align with the grapheme clusters.
+  /// Returns:
+  /// A `Vec` of `(byte_index, grapheme_idx)` pairs for each match that alignes with the grapheme clusters, where byte_index is the byte index of the match, and grapheme_idx is the grapheme index of the match.
+  fn match_graphme_clusters(
+    &self,
+    matches: &[ByteIdx],
+    query: &str,
+  ) -> Vec<(ByteIdx, GraphemeIdx)> {
+    // Count graphemes in query
+    let grapheme_count = query.graphemes(true).count();
+
+    matches
+      .iter()
+      .filter_map(|&start| {
+        self
+          .byte_idx_to_grapheme_idx(start)
+          .and_then(|grapheme_idx| {
+            self
+              .fragments
+              .get(grapheme_idx..grapheme_idx.saturating_add(grapheme_count))
+              .and_then(|fragments| {
+                // combine the fragments into a single string
+                let substring = fragments
+                  .iter()
+                  .map(|fragment| fragment.grapheme.as_str())
+                  .collect::<String>();
+                // if combined string matches query, return the start and grapheme count
+                (substring == query).then_some((start, grapheme_idx))
+              })
+          })
+      })
+      .collect()
   }
 
   /// Given a search query and a range in byte indices
   /// return a vector of pairs of byte indices and grapheme indices of match
   fn find_all(&self, query: &str, range: Range<ByteIdx>) -> Vec<(ByteIdx, GraphemeIdx)> {
-    let start_byte_idx = range.start;
-    let end_byte_idx = range.end;
+    let start = range.start;
+    let end = min(range.end, self.string.len());
 
-    self
-      .string
-      .get(start_byte_idx..end_byte_idx)
-      .map_or_else(Vec::new, |substr| {
-        substr
-          .match_indices(query) // find _potential_ matches within the substring
-          .filter_map(|(relative_start_idx, _)| {
-            //convert their relative indices to absolute indices
-            let absolute_start_idx = relative_start_idx.saturating_add(start_byte_idx);
+    debug_assert!(start <= end);
+    debug_assert!(start <= self.string.len());
 
-            self
-              .byte_idx_to_grapheme_idx(absolute_start_idx)
-              .map(|grapheme_idx| (absolute_start_idx, grapheme_idx))
-          })
-          .collect()
-      })
+    self.string.get(start..end).map_or_else(Vec::new, |substr| {
+      // Byte idx of all the potential match
+      let potential_matches: Vec<ByteIdx> = substr
+        .match_indices(query) // find _potential_ matches within the substring
+        .map(|(relative_start, _)| {
+          //convert their relative indices to absolute indices
+          relative_start.saturating_add(start)
+        })
+        .collect();
+      //convert the potential matches into matches which align with the grapheme boundaries.
+      self.match_graphme_clusters(&potential_matches, query)
+    })
   }
 }
 

@@ -1,4 +1,4 @@
-use crate::editor::size::Size;
+use crate::prelude::*;
 
 use crossterm::event::{
   KeyCode::{Char, Esc},

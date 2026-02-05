@@ -1,6 +1,6 @@
-use crate::editor::{
-  line::Line,
-  uicomponents::view::{fileinfo::FileInfo, location::Location},
+use crate::{
+  editor::{line::Line, uicomponents::view::fileinfo::FileInfo},
+  prelude::Location,
 };
 
 use std::{
