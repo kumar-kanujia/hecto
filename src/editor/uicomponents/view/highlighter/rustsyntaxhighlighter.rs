@@ -10,101 +10,186 @@ use crate::{
   prelude::LineIdx,
 };
 
+const KEYWORDS: [&str; 52] = [
+  "break",
+  "const",
+  "continue",
+  "crate",
+  "else",
+  "enum",
+  "extern",
+  "false",
+  "fn",
+  "for",
+  "if",
+  "impl",
+  "in",
+  "let",
+  "loop",
+  "match",
+  "mod",
+  "move",
+  "mut",
+  "pub",
+  "ref",
+  "return",
+  "self",
+  "Self",
+  "static",
+  "struct",
+  "super",
+  "trait",
+  "true",
+  "type",
+  "unsafe",
+  "use",
+  "where",
+  "while",
+  "async",
+  "await",
+  "dyn",
+  "abstract",
+  "become",
+  "box",
+  "do",
+  "final",
+  "macro",
+  "override",
+  "priv",
+  "typeof",
+  "unsized",
+  "virtual",
+  "yield",
+  "try",
+  "macro_rules",
+  "union",
+];
+
+const TYPES: [&str; 22] = [
+  "i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128", "usize", "f32",
+  "f64", "bool", "char", "Option", "Result", "String", "str", "Vec", "HashMap",
+];
+
+const KNOWN_VALUES: [&str; 6] = ["Some", "None", "true", "false", "Ok", "Err"];
+
 #[derive(Default)]
 pub struct RustSyntaxHighlighter {
   highlights: HashMap<LineIdx, Vec<Annotation>>,
 }
 
-fn is_valid_number(word: &str) -> bool {
-  if word.is_empty() {
-    return false;
+impl RustSyntaxHighlighter {
+  fn is_numeric_literal(word: &str) -> bool {
+    if word.len() < 3 {
+      //For a literal, we need a leading `0`, a suffix and at least one digit
+      return false;
+    }
+
+    let mut chars = word.chars();
+    if chars.next() != Some('0') {
+      // Check the first character for a leading 0
+      return false;
+    }
+    let base = match chars.next() {
+      //Check the second character for a proper base
+      Some('b' | 'B') => 2,
+      Some('o' | 'O') => 8,
+      Some('x' | 'X') => 16,
+      _ => return false,
+    };
+    chars.all(|char| char.is_digit(base))
   }
 
-  if is_numeric_literal(word) {
-    return true;
-  }
+  fn is_valid_number(word: &str) -> bool {
+    if word.is_empty() {
+      return false;
+    }
 
-  let mut chars = word.chars();
+    if Self::is_numeric_literal(word) {
+      return true;
+    }
 
-  // Check the first character
-  if let Some(first_char) = chars.next()
-    && !first_char.is_ascii_digit()
-  // Numbers must start with a digit
-  {
-    return false;
-  }
+    let mut chars = word.chars();
 
-  let mut seen_dot = false;
-  let mut seen_e = false;
-  let mut prev_was_digit = true;
+    // Check the first character
+    if let Some(first_char) = chars.next()
+      && !first_char.is_ascii_digit()
+    // Numbers must start with a digit
+    {
+      return false;
+    }
 
-  // Iterate over the remaining characters
-  for char in chars {
-    match char {
-      '0'..='9' => {
-        prev_was_digit = true;
-      }
-      '_' => {
-        // Underscores must be between digits
-        if !prev_was_digit {
+    let mut seen_dot = false;
+    let mut seen_e = false;
+    let mut prev_was_digit = true;
+
+    // Iterate over the remaining characters
+    for char in chars {
+      match char {
+        '0'..='9' => {
+          prev_was_digit = true;
+        }
+        '_' => {
+          // Underscores must be between digits
+          if !prev_was_digit {
+            return false;
+          }
+          prev_was_digit = false;
+        }
+        '.' => {
+          // Disallow multiple dots, dots after 'e' or dots not after a digit
+          if seen_dot || seen_e || !prev_was_digit {
+            return false;
+          }
+          seen_dot = true;
+          prev_was_digit = false;
+        }
+        'e' | 'E' => {
+          // Disallow multiple 'e's or 'e' not after a digit
+          if seen_e || !prev_was_digit {
+            return false;
+          }
+          seen_e = true;
+          prev_was_digit = false;
+        }
+        _ => {
+          // Invalid character
           return false;
         }
-        prev_was_digit = false;
-      }
-      '.' => {
-        // Disallow multiple dots, dots after 'e' or dots not after a digit
-        if seen_dot || seen_e || !prev_was_digit {
-          return false;
-        }
-        seen_dot = true;
-        prev_was_digit = false;
-      }
-      'e' | 'E' => {
-        // Disallow multiple 'e's or 'e' not after a digit
-        if seen_e || !prev_was_digit {
-          return false;
-        }
-        seen_e = true;
-        prev_was_digit = false;
-      }
-      _ => {
-        // Invalid character
-        return false;
       }
     }
+
+    // Must end with a digit
+    prev_was_digit
   }
 
-  // Must end with a digit
-  prev_was_digit
-}
-
-fn is_numeric_literal(word: &str) -> bool {
-  if word.len() < 3 {
-    //For a literal, we need a leading `0`, a suffix and at least one digit
-    return false;
+  fn is_keyword(word: &str) -> bool {
+    KEYWORDS.contains(&word)
   }
 
-  let mut chars = word.chars();
-  if chars.next() != Some('0') {
-    // Check the first character for a leading 0
-    return false;
+  fn is_type(word: &str) -> bool {
+    TYPES.contains(&word)
   }
-  let base = match chars.next() {
-    //Check the second character for a proper base
-    Some('b' | 'B') => 2,
-    Some('o' | 'O') => 8,
-    Some('x' | 'X') => 16,
-    _ => return false,
-  };
-  chars.all(|char| char.is_digit(base))
-}
 
-impl RustSyntaxHighlighter {
+  fn is_known_value(word: &str) -> bool {
+    KNOWN_VALUES.contains(&word)
+  }
+
   fn highlight_digits(line: &Line, result: &mut Vec<Annotation>) {
     line.split_word_bound_indices().for_each(|(start, word)| {
-      if is_valid_number(word) {
+      let mut annotation_type = None;
+      if Self::is_valid_number(word) {
+        annotation_type = Some(AnnotationType::Number);
+      } else if Self::is_keyword(word) {
+        annotation_type = Some(AnnotationType::Keyword);
+      } else if Self::is_type(word) {
+        annotation_type = Some(AnnotationType::Type);
+      } else if Self::is_known_value(word) {
+        annotation_type = Some(AnnotationType::KnownValue);
+      }
+
+      if let Some(annotation_type) = annotation_type {
         result.push(Annotation {
-          annotation_type: AnnotationType::Number,
+          annotation_type,
           start,
           end: start.saturating_add(word.len()),
         });

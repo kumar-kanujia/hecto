@@ -5,4 +5,7 @@ pub enum AnnotationType {
   /// A match that is currently selected
   SelectedMatch,
   Number,
+  Keyword,
+  Type,
+  KnownValue,
 }
