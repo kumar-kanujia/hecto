@@ -34,12 +34,12 @@ impl<'a> Highlighter<'a> {
     selected_match: Option<Location>,
     file_type: FileType,
   ) -> Self {
-    let searh_result_highlighter =
+    let search_result_highlighter =
       matched_word.map(|matched_word| SearchResultHighlighter::new(matched_word, selected_match));
 
     Self {
+      search_result_highlighter,
       syntax_highlighter: create_syntax_highlighter(file_type),
-      search_result_highlighter: searh_result_highlighter,
     }
   }
 

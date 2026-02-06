@@ -17,7 +17,7 @@ impl FileInfo {
 
     let file_type = if path
       .extension()
-      .map_or(false, |ext| ext.eq_ignore_ascii_case("rs"))
+      .is_some_and(|ext| ext.eq_ignore_ascii_case("rs"))
     {
       FileType::Rust
     } else {

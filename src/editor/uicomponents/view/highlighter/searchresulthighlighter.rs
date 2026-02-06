@@ -54,14 +54,14 @@ impl<'a> SearchResultHighlighter<'a> {
   }
 }
 
-impl<'a> SyntaxHighlighter for SearchResultHighlighter<'a> {
+impl SyntaxHighlighter for SearchResultHighlighter<'_> {
   fn highlight(&mut self, idx: LineIdx, line: &Line) {
     let mut result = Vec::new();
     self.highlight_matched_words(line, &mut result);
-    if let Some(selected_match) = self.selected_match {
-      if selected_match.line_idx == idx {
-        self.highlight_selected_match(&mut result);
-      }
+    if let Some(selected_match) = self.selected_match
+      && selected_match.line_idx == idx
+    {
+      self.highlight_selected_match(&mut result);
     }
     self.highlights.insert(idx, result);
   }
