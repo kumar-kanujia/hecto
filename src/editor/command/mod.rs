@@ -1,6 +1,6 @@
-pub mod edit;
-pub mod movecommand;
-pub mod system;
+mod edit;
+mod movecommand;
+mod system;
 
 pub use crate::{
   editor::command::{edit::Edit, movecommand::Move, system::System},

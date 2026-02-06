@@ -1,6 +1,9 @@
 mod annotatedstring;
+mod annotation;
+mod annotationtype;
 mod command;
 mod documentstatus;
+mod filetype;
 mod line;
 mod terminal;
 mod uicomponents;
@@ -79,7 +82,7 @@ impl Editor {
     // Create new editor
     let mut editor = Self::default();
 
-    // Retrive current terminal size
+    // Retrieve current terminal size
     let size = Terminal::size().unwrap_or_default();
     // Resize Editor to current terminal size
     editor.handle_resize_command(size);
@@ -89,7 +92,7 @@ impl Editor {
     // Vector to collect all args
     let args: Vec<String> = env::args().collect();
 
-    // If there's an first arg
+    // If there's a first arg
     if let Some(file_name) = args.get(1) {
       debug_assert!(!file_name.is_empty());
 
@@ -369,7 +372,7 @@ impl Editor {
 
   fn set_prompt(&mut self, prompt_type: PromptType) {
     match prompt_type {
-      //Ensures the message bar is properly painted during the next redraw cycle
+      // Ensures the message bar is properly painted during the next redraw cycle
       PromptType::None => self.message_bar.set_needs_redraw(true),
       PromptType::Save => self.command_bar.set_prompt("Save as: "),
       PromptType::Search => {

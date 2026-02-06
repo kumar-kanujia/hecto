@@ -1,6 +1,6 @@
 [package]
 name = "hecto"
-version = "0.6.260203"
+version = "0.7.260206"
 edition = "2024"
 
 [dependencies]

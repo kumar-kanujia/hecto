@@ -4,4 +4,5 @@ pub enum AnnotationType {
   Match,
   /// A match that is currently selected
   SelectedMatch,
+  Digit,
 }

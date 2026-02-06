@@ -60,12 +60,12 @@ impl UIComponent for CommandBar {
   }
 
   fn draw(&mut self, origin_row: RowIdx) -> Result<(), Error> {
-    //this is how much space there is between the right side of the prompt and the edge of the bar
+    // This is how much space there is between the right side of the prompt and the edge of the bar
     let area_for_value = self.size.width.saturating_sub(self.prompt.len());
-    // we always want to show the left part of the value
+    // We always want to show the left part of the value
     // therefore the end of the visible range we try to access will be equal to the full width
     let value_end = self.value.width();
-    //T his should give us the start for the grapheme subrange we want to print out.
+    // This should give us the start for the grapheme subrange we want to print out.
     let value_start = value_end.saturating_sub(area_for_value);
     let message = format!(
       "{}{}",

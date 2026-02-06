@@ -1,23 +1,64 @@
 use crate::{
-  editor::{line::Line, uicomponents::view::fileinfo::FileInfo},
-  prelude::Location,
+  editor::{
+    annotatedstring::AnnotatedString,
+    line::Line,
+    uicomponents::view::{fileinfo::FileInfo, highlighter::Highlighter},
+  },
+  prelude::*,
 };
 
 use std::{
   fs::{File, read_to_string},
   io::{Error, Write},
+  ops::Range,
 };
 
 #[derive(Default)]
 pub struct Buffer {
-  /// Store line as an vector
-  pub lines: Vec<Line>,
-  pub file_info: FileInfo,
-  /// Marked true if there is chnage in original buffer
-  pub dirty: bool,
+  /// Store line as a vector
+  lines: Vec<Line>,
+  file_info: FileInfo,
+  /// Marked true if there is change in original buffer
+  dirty: bool,
 }
 
 impl Buffer {
+  pub const fn is_dirty(&self) -> bool {
+    self.dirty
+  }
+
+  pub const fn get_file_info(&self) -> &FileInfo {
+    &self.file_info
+  }
+
+  pub fn grapheme_count(&self, idx: LineIdx) -> GraphemeIdx {
+    self.lines.get(idx).map_or(0, Line::grapheme_count)
+  }
+
+  pub fn width_until(&self, idx: LineIdx, until: GraphemeIdx) -> GraphemeIdx {
+    self
+      .lines
+      .get(idx)
+      .map_or(0, |line| line.width_until(until))
+  }
+
+  pub fn get_highlighted_substring(
+    &self,
+    line_idx: LineIdx,
+    range: Range<GraphemeIdx>,
+    highlighter: &Highlighter,
+  ) -> Option<AnnotatedString> {
+    self.lines.get(line_idx).map(|line| {
+      line.get_annotated_visible_substr(range, Some(&highlighter.get_annotations(line_idx)))
+    })
+  }
+
+  pub fn highlight(&self, idx: LineIdx, highlighter: &mut Highlighter) {
+    if let Some(line) = self.lines.get(idx) {
+      highlighter.highlight(idx, line);
+    }
+  }
+
   pub fn load(file_name: &str) -> Result<Self, Error> {
     let contents = read_to_string(file_name)?;
     let mut lines = Vec::new();
@@ -31,7 +72,7 @@ impl Buffer {
     })
   }
 
-  /// Save the buffer in the give file
+  /// Save the buffer in the given file
   fn save_to_file(&self, file_info: &FileInfo) -> Result<(), Error> {
     if let Some(file_path) = &file_info.get_path() {
       let mut file = File::create(file_path)?;
@@ -69,11 +110,11 @@ impl Buffer {
   }
 
   /// Return total height covered by buffer
-  pub fn height(&self) -> usize {
+  pub fn height(&self) -> LineIdx {
     self.lines.len()
   }
 
-  /// Insert a character in a line on at at
+  /// Insert a character in a line at
   pub fn insert_char(&mut self, character: char, at: Location) {
     // We don't insert anything more than line below the document
     debug_assert!(at.line_idx <= self.height());
@@ -93,16 +134,16 @@ impl Buffer {
   pub fn delete(&mut self, at: Location) {
     // Check if we are at a valid line
     if let Some(line) = self.lines.get(at.line_idx) {
-      // Check if we are at the end of current line and there's atleast next line available
+      // Check if we are at the end of current line and there's at least next line available
       if at.grapheme_idx >= line.grapheme_count() && self.height() > at.line_idx.saturating_add(1) {
         let next_line = self.lines.remove(at.line_idx.saturating_add(1));
 
-        // clippy::indexing_slicing: We checked for existence of this line in the surrounding if statment
+        // clippy::indexing_slicing: We checked for existence of this line in the surrounding if statement
         #[allow(clippy::indexing_slicing)]
         self.lines[at.line_idx].append(&next_line);
         self.dirty = true;
       } else if at.grapheme_idx < line.grapheme_count() {
-        // clippy::indexing_slicing: We checked for existence of this line in the surrounding if statment
+        // clippy::indexing_slicing: We checked for existence of this line in the surrounding if statement
         #[allow(clippy::indexing_slicing)]
         self.lines[at.line_idx].delete(at.grapheme_idx);
         self.dirty = true;
@@ -110,7 +151,7 @@ impl Buffer {
     }
   }
 
-  /// Insert a new given at location
+  /// Insert a new line given at location
   pub fn insert_newline(&mut self, at: Location) {
     // If we are at the end of document, insert an empty line.
     if at.line_idx == self.height() {

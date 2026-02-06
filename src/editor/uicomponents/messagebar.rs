@@ -35,7 +35,7 @@ pub struct MessageBar {
   current_message: Message,
   need_redraw: bool,
   // ensures we can properly hide expired messages
-  // once a message expires we need to
+  // once a message expires we need to clear it
   cleared_after_expiry: bool,
 }
 
@@ -56,7 +56,7 @@ impl UIComponent for MessageBar {
   }
 
   fn needs_redraw(&self) -> bool {
-    // Check if current message is cleared we send redraw ever time till it gets cleared
+    // Check if current message is cleared we send redraw every time till it gets cleared
     let is_message_cleared = !self.cleared_after_expiry && self.current_message.is_expired();
     is_message_cleared || self.need_redraw
   }
@@ -64,7 +64,7 @@ impl UIComponent for MessageBar {
   fn draw(&mut self, origin_y: RowIdx) -> Result<(), Error> {
     if self.current_message.is_expired() {
       // Upon expiration, we need to write out "" once to clear the message.
-      // To avoid clearing more than necessary, we  keep track of the fact that we've already cleared the expired message once.
+      // To avoid clearing more than necessary, we keep track of the fact that we've already cleared the expired message once.
       self.cleared_after_expiry = true;
     }
     let message = if self.current_message.is_expired() {

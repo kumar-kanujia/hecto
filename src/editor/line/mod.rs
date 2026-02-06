@@ -3,7 +3,8 @@ mod textfragment;
 
 use crate::{
   editor::{
-    annotatedstring::{AnnotatedString, annotationtype::AnnotationType},
+    annotatedstring::AnnotatedString,
+    annotation::Annotation,
     line::{graphemewidth::GraphemeWidth, textfragment::TextFragment},
   },
   prelude::*,
@@ -95,66 +96,32 @@ impl Line {
     }
   }
 
-  // Gets the visible graphemes in the given column index.
-  // Note that the column index is not the same as the grapheme index:
-  // A grapheme can have a width of 2 columns.
-  pub fn get_visible_graphemes(&self, range: Range<ColIdx>) -> String {
-    self
-      .get_annotated_visible_substr(range, None, None)
-      .to_string()
-  }
-
   /// Get the annotated string in the given column index.
   /// Note that the column index is not the same as the grapheme index:
   /// A grapheme can have a width of 2 columns.
   /// Parameters:
   /// - `range`: The range of columns to get the annotated string from.
-  /// - `query`: The query to highlight in the annotated string.
-  /// - `selected_match`: The selected match to highlight in the annotated string. This is only applied if the query is not empty.
   pub fn get_annotated_visible_substr(
     &self,
     range: Range<ColIdx>,
-    query: Option<&str>,
-    selected_match: Option<GraphemeIdx>,
+    annotations: Option<&Vec<Annotation>>,
   ) -> AnnotatedString {
     if range.start >= range.end {
       return AnnotatedString::default();
     }
 
-    // Create a new annotated string (annotaion is not present here)
+    // Create a new annotated string (annotation is not present here)
     let mut result = AnnotatedString::from(&self.string);
 
-    // Annotate result based on the query
-    if let Some(query) = query
-      && !query.is_empty()
-    {
-      self
-        .find_all(query, 0..self.string.len())
-        .iter()
-        .for_each(|(start, grapheme_idx)| {
-          // Check if select_match is passed to the function
-          if let Some(selected_match) = selected_match {
-            // Check if the annotation is for selected match
-            if *grapheme_idx == selected_match {
-              result.add_annotation(
-                AnnotationType::SelectedMatch,
-                *start,
-                start.saturating_add(query.len()),
-              );
-              return;
-            }
-          }
-          result.add_annotation(
-            AnnotationType::Match,
-            *start,
-            start.saturating_add(query.len()),
-          );
-        });
+    // Apply annotation for this string
+    if let Some(annotations) = annotations {
+      for annotation in annotations {
+        result.add_annotation(annotation.annotation_type, annotation.start, annotation.end);
+      }
     }
 
     // Insert replacement characters, and truncate if needed.
     // We do this backwards, otherwise the byte indices would be off in case a replacement character has a different width than the original character.
-
     let mut fragment_start = self.width();
 
     for fragment in self.fragments.iter().rev() {
@@ -205,6 +172,13 @@ impl Line {
     }
 
     result
+  }
+
+  // Gets the visible graphemes in the given column index.
+  // Note that the column index is not the same as the grapheme index:
+  // A grapheme can have a width of 2 columns.
+  pub fn get_visible_graphemes(&self, range: Range<ColIdx>) -> String {
+    self.get_annotated_visible_substr(range, None).to_string()
   }
 
   pub fn grapheme_count(&self) -> GraphemeIdx {
@@ -259,13 +233,13 @@ impl Line {
     self.delete(self.grapheme_count().saturating_sub(1));
   }
 
-  /// Append an another line to current line
+  /// Append another line to current line
   pub fn append(&mut self, other: &Self) {
     self.string.push_str(&other.string);
     self.rebuild_fragments();
   }
 
-  /// Split the line at the give grrapheme index
+  /// Split the line at the give grapheme index
   pub fn split(&mut self, at: GraphemeIdx) -> Self {
     if let Some(fragment) = self.fragments.get(at) {
       let remainder = self.string.split_off(fragment.start);
@@ -351,13 +325,14 @@ impl Line {
       .map(|(_, grapheme_idx)| *grapheme_idx)
   }
 
-  /// Finds all matches which align with grapheme boundaries.
+  /// Finds all matches which aligns with grapheme boundaries.
   /// Parameters:
   /// - `query`: The query to search for.
   /// - `matches`: A vector of byte indices of potential matches, which might or might not align with the grapheme clusters.
-  /// Returns:
-  /// A `Vec` of `(byte_index, grapheme_idx)` pairs for each match that alignes with the grapheme clusters, where byte_index is the byte index of the match, and grapheme_idx is the grapheme index of the match.
-  fn match_graphme_clusters(
+  /// - `Returns: Vec<(ByteIdx, GraphemeIdx)> `
+  ///
+  /// A `Vec` of `(byte_index, grapheme_idx)` pairs for each match that alignes with the grapheme clusters, where `byte_index` is the byte index of the match, and `grapheme_idx` is the grapheme index of the match.
+  fn match_grapheme_clusters(
     &self,
     matches: &[ByteIdx],
     query: &str,
@@ -390,7 +365,7 @@ impl Line {
 
   /// Given a search query and a range in byte indices
   /// return a vector of pairs of byte indices and grapheme indices of match
-  fn find_all(&self, query: &str, range: Range<ByteIdx>) -> Vec<(ByteIdx, GraphemeIdx)> {
+  pub fn find_all(&self, query: &str, range: Range<ByteIdx>) -> Vec<(ByteIdx, GraphemeIdx)> {
     let start = range.start;
     let end = min(range.end, self.string.len());
 
@@ -407,7 +382,7 @@ impl Line {
         })
         .collect();
       //convert the potential matches into matches which align with the grapheme boundaries.
-      self.match_graphme_clusters(&potential_matches, query)
+      self.match_grapheme_clusters(&potential_matches, query)
     })
   }
 }

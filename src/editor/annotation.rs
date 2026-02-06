@@ -1,4 +1,4 @@
-use crate::{editor::annotatedstring::annotationtype::AnnotationType, prelude::*};
+use crate::{editor::annotationtype::AnnotationType, prelude::*};
 
 // clippy::struct_field_names: naming the field `type` is disallowed due to type being a keyword.
 /// Represents annotation on the annotated string
