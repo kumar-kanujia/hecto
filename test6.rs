@@ -24,3 +24,6 @@
 // 'a 'this_is_cool <'abc> '123
 // Invalid/ should not be (fully) highlighted:
 // "a", b' '   'invalid-specifier
+pub fn test(){
+return 10;
+}

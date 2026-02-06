@@ -83,6 +83,14 @@ impl From<AnnotationType> for Attribute {
         }),
         background: None,
       },
+      AnnotationType::Comment => Self {
+        foreground: Some(Color::Rgb {
+          r: 34,
+          g: 139,
+          b: 34,
+        }),
+        background: None,
+      },
     }
   }
 }
