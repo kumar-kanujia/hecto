@@ -8,4 +8,5 @@ pub enum AnnotationType {
   Keyword,
   Type,
   KnownValue,
+  Char,
 }

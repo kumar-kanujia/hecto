@@ -8,6 +8,8 @@
 // 1_00, 1_000_1, 1_000_000_000
 // Literals:
 // 0x1, 0X2, 0b1, 0B0, 0X10F, 0o1
+// Valid/Should be highlighted:
+// '1' 'a' 'b' '👍' '\x1b', 'notacharacter' '\'', '\\' '1''2''3' '1'notchar'2'
 
 // Invalid Integers:
 // 1a 2b 3c 4d 5e 6f 7g 8h 9i 0j, 100a200b300c400d500, u32, i8, f64, 1,2,3,4,5
@@ -19,3 +21,5 @@
 // _100_1, 100_, 1_00_, _
 // Invalid Literals:
 // 0b102 0x1G, 1o108, 0xxx
+// Invalid/ should not be highlighted:
+// "a", 'b c'
