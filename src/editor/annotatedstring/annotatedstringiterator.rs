@@ -5,13 +5,13 @@ use std::cmp::min;
 
 /// Iterator returned by `AnnotatedString`
 pub struct AnnotatedStringIterator<'a> {
-  /// Reference to the `AnnotatedString` with an liftime valid till the end of the iterator
+  /// Reference to the `AnnotatedString` with an lifetime valid till the end of the iterator
   pub annotated_string: &'a AnnotatedString,
   /// Keep track of current byte index
   pub current_idx: ByteIdx,
 }
 
-// Implimentation of Iterator trait
+// Implementation of Iterator trait
 impl<'a> Iterator for AnnotatedStringIterator<'a> {
   // Return type of the iterator
   type Item = AnnotatedStringPart<'a>;
@@ -27,7 +27,7 @@ impl<'a> Iterator for AnnotatedStringIterator<'a> {
     // Find the current active annotation
     if let Some(annotation) = self
       .annotated_string
-      .annotation
+      .annotations
       .iter()
       // Filter out all annotation that does not return true
       // It filter out active annotation
@@ -35,7 +35,7 @@ impl<'a> Iterator for AnnotatedStringIterator<'a> {
       // Search from back take the first one
       .rfind(|annotation| annotation.start <= self.current_idx && annotation.end > self.current_idx)
     {
-      // Start and end of the string slice at which annonation ends
+      // Start and end of the string slice at which annotation ends
       let start_idx = self.current_idx;
 
       let end_idx = min(annotation.end, self.annotated_string.string.len());
@@ -50,10 +50,10 @@ impl<'a> Iterator for AnnotatedStringIterator<'a> {
       });
     }
 
-    // Find the boundry of the nearest annotation to the right
+    // Find the boundary of the nearest annotation to the right
     // If not found then end will be end of the string
     let mut end_idx = self.annotated_string.string.len();
-    for annotation in &self.annotated_string.annotation {
+    for annotation in &self.annotated_string.annotations {
       if annotation.start > self.current_idx && annotation.start < end_idx {
         end_idx = annotation.start;
       }

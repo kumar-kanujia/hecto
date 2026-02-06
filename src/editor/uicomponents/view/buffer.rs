@@ -15,10 +15,10 @@ use std::{
 
 #[derive(Default)]
 pub struct Buffer {
-  /// Store line as an vector
+  /// Store line as a vector
   lines: Vec<Line>,
   file_info: FileInfo,
-  /// Marked true if there is chnage in original buffer
+  /// Marked true if there is change in original buffer
   dirty: bool,
 }
 
@@ -72,7 +72,7 @@ impl Buffer {
     })
   }
 
-  /// Save the buffer in the give file
+  /// Save the buffer in the given file
   fn save_to_file(&self, file_info: &FileInfo) -> Result<(), Error> {
     if let Some(file_path) = &file_info.get_path() {
       let mut file = File::create(file_path)?;
@@ -114,7 +114,7 @@ impl Buffer {
     self.lines.len()
   }
 
-  /// Insert a character in a line on at at
+  /// Insert a character in a line at
   pub fn insert_char(&mut self, character: char, at: Location) {
     // We don't insert anything more than line below the document
     debug_assert!(at.line_idx <= self.height());
@@ -134,16 +134,16 @@ impl Buffer {
   pub fn delete(&mut self, at: Location) {
     // Check if we are at a valid line
     if let Some(line) = self.lines.get(at.line_idx) {
-      // Check if we are at the end of current line and there's atleast next line available
+      // Check if we are at the end of current line and there's at least next line available
       if at.grapheme_idx >= line.grapheme_count() && self.height() > at.line_idx.saturating_add(1) {
         let next_line = self.lines.remove(at.line_idx.saturating_add(1));
 
-        // clippy::indexing_slicing: We checked for existence of this line in the surrounding if statment
+        // clippy::indexing_slicing: We checked for existence of this line in the surrounding if statement
         #[allow(clippy::indexing_slicing)]
         self.lines[at.line_idx].append(&next_line);
         self.dirty = true;
       } else if at.grapheme_idx < line.grapheme_count() {
-        // clippy::indexing_slicing: We checked for existence of this line in the surrounding if statment
+        // clippy::indexing_slicing: We checked for existence of this line in the surrounding if statement
         #[allow(clippy::indexing_slicing)]
         self.lines[at.line_idx].delete(at.grapheme_idx);
         self.dirty = true;
@@ -151,7 +151,7 @@ impl Buffer {
     }
   }
 
-  /// Insert a new given at location
+  /// Insert a new line given at location
   pub fn insert_newline(&mut self, at: Location) {
     // If we are at the end of document, insert an empty line.
     if at.line_idx == self.height() {

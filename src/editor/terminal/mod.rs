@@ -80,7 +80,7 @@ impl Terminal {
 
   /// Moves the caret to the given Position.
   /// # Arguments
-  /// * `Position` - the  `Position`to move the caret to. Will be truncated to `u16::MAX` if bigger.
+  /// * `Position` - the  `Position` to move the caret to. Will be truncated to `u16::MAX` if bigger.
   pub fn move_caret_to(position: Position) -> Result<(), Error> {
     // clippy::as_conversions: See doc above
     #[allow(clippy::as_conversions, clippy::cast_possible_truncation)]

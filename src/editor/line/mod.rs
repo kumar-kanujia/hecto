@@ -110,7 +110,7 @@ impl Line {
       return AnnotatedString::default();
     }
 
-    // Create a new annotated string (annotaion is not present here)
+    // Create a new annotated string (annotation is not present here)
     let mut result = AnnotatedString::from(&self.string);
 
     // Apply annotation for this string
@@ -233,13 +233,13 @@ impl Line {
     self.delete(self.grapheme_count().saturating_sub(1));
   }
 
-  /// Append an another line to current line
+  /// Append another line to current line
   pub fn append(&mut self, other: &Self) {
     self.string.push_str(&other.string);
     self.rebuild_fragments();
   }
 
-  /// Split the line at the give grrapheme index
+  /// Split the line at the give grapheme index
   pub fn split(&mut self, at: GraphemeIdx) -> Self {
     if let Some(fragment) = self.fragments.get(at) {
       let remainder = self.string.split_off(fragment.start);
@@ -325,14 +325,14 @@ impl Line {
       .map(|(_, grapheme_idx)| *grapheme_idx)
   }
 
-  /// Finds all matches which align with grapheme boundaries.
+  /// Finds all matches which aligns with grapheme boundaries.
   /// Parameters:
   /// - `query`: The query to search for.
   /// - `matches`: A vector of byte indices of potential matches, which might or might not align with the grapheme clusters.
   /// - `Returns: Vec<(ByteIdx, GraphemeIdx)> `
   ///
   /// A `Vec` of `(byte_index, grapheme_idx)` pairs for each match that alignes with the grapheme clusters, where `byte_index` is the byte index of the match, and `grapheme_idx` is the grapheme index of the match.
-  fn match_graphme_clusters(
+  fn match_grapheme_clusters(
     &self,
     matches: &[ByteIdx],
     query: &str,
@@ -382,7 +382,7 @@ impl Line {
         })
         .collect();
       //convert the potential matches into matches which align with the grapheme boundaries.
-      self.match_graphme_clusters(&potential_matches, query)
+      self.match_grapheme_clusters(&potential_matches, query)
     })
   }
 }

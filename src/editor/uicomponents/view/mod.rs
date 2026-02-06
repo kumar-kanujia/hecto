@@ -207,7 +207,7 @@ impl View {
     // Get current size of the view
     let Size { height, width } = self.size;
 
-    // Get position of of current text location
+    // Get position of current text location
     let Position { row, col } = self.text_location_to_position();
 
     // Get the middle of the view
@@ -215,7 +215,7 @@ impl View {
     let horizontal_mid = width.div_ceil(2);
 
     // Change the offset of the view
-    // Which in trun move the view only not the current edit position
+    // Which in turn move the view only not the current edit position
     self.scroll_offset.row = row.saturating_sub(vertical_mid);
     self.scroll_offset.col = col.saturating_sub(horizontal_mid);
 
@@ -420,7 +420,7 @@ impl UIComponent for View {
     let query = self
       .search_info
       .as_ref()
-      .and_then(|seach_info| seach_info.query.as_deref());
+      .and_then(|search_info| search_info.query.as_deref());
 
     let selected_match = query.is_some().then_some(self.text_location);
 
@@ -430,14 +430,14 @@ impl UIComponent for View {
       self.buffer.get_file_info().get_file_type(),
     );
 
-    //highlight from the start of the document to the end of the visible area, to ensure all annotations are up to date.
+    // Highlight from the start of the document to the end of the visible area, to ensure all annotations are up to date.
     for current_row in 0..end_y.saturating_add(scroll_top) {
       self.buffer.highlight(current_row, &mut highlighter);
     }
 
     for current_row in origin_row..end_y {
       // to get the correct line index, we have to take current_row (the absolute row on screen),
-      // subtract origin_y to get the current row relative to the view (ranging from 0 to self.size.height)
+      // subtract origin_row to get the current row relative to the view (ranging from 0 to self.size.height)
       // and add the scroll offset.
       let line_idx = current_row
         .saturating_sub(origin_row)

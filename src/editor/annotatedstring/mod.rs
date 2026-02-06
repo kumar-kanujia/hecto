@@ -21,27 +21,27 @@ use std::{
 #[derive(Debug, Default)]
 pub struct AnnotatedString {
   string: String,
-  annotation: Vec<Annotation>,
+  annotations: Vec<Annotation>,
 }
 
 impl AnnotatedString {
   pub fn from(string: &str) -> Self {
     Self {
       string: String::from(string),
-      annotation: Vec::new(),
+      annotations: Vec::new(),
     }
   }
 
   pub fn add_annotation(&mut self, annotation_type: AnnotationType, start: ByteIdx, end: ByteIdx) {
     debug_assert!(start <= end);
-    self.annotation.push(Annotation {
+    self.annotations.push(Annotation {
       annotation_type,
       start,
       end,
     });
   }
 
-  pub fn replace(&mut self, start: usize, end: usize, new_string: &str) {
+  pub fn replace(&mut self, start: ByteIdx, end: ByteIdx, new_string: &str) {
     let end = min(end, self.string.len());
 
     debug_assert!(start <= end);
@@ -59,8 +59,8 @@ impl AnnotatedString {
     // This is the range we want to replace.
     let replaced_range_len = end.saturating_sub(start);
 
-    // Is replaced string is sorter?
-    let shortend = new_string.len() < replaced_range_len;
+    // Is replaced string is shorter?
+    let shortened = new_string.len() < replaced_range_len;
 
     // This is how much longer or shorter the new range is.
     let len_difference = new_string.len().abs_diff(replaced_range_len);
@@ -70,10 +70,10 @@ impl AnnotatedString {
       return;
     }
 
-    self.annotation.iter_mut().for_each(|annotation| {
+    self.annotations.iter_mut().for_each(|annotation| {
       annotation.start = if annotation.start >= end {
         // For annotations starting after the replaced range, we move the start index by the difference in length.
-        if shortend {
+        if shortened {
           // Move annotation to left
           annotation.start.saturating_sub(len_difference)
         } else {
@@ -81,10 +81,10 @@ impl AnnotatedString {
           annotation.start.saturating_add(len_difference)
         }
         // If annotation start in between the insertion
-      } else if annotation.start > start {
+      } else if annotation.start >= start {
         // For annotations starting within the replaced range,
         // We move the start index by the difference in length, constrained to the beginning or end of the replaced range.
-        if shortend {
+        if shortened {
           max(start, annotation.start.saturating_sub(len_difference))
         } else {
           min(end, annotation.start.saturating_add(len_difference))
@@ -95,14 +95,14 @@ impl AnnotatedString {
 
       annotation.end = if annotation.end >= end {
         // For annotations ending after the replaced range, we move the end index by the difference in length.
-        if shortend {
+        if shortened {
           annotation.end.saturating_sub(len_difference)
         } else {
           annotation.end.saturating_add(len_difference)
         }
       } else if annotation.end >= start {
         // For annotations ending within the replaced range, we move the end index by the difference in length, constrained to the beginning or end of the replaced range.
-        if shortend {
+        if shortened {
           max(start, annotation.end.saturating_sub(len_difference))
         } else {
           min(end, annotation.end.saturating_add(len_difference))
@@ -112,7 +112,7 @@ impl AnnotatedString {
       };
     });
 
-    self.annotation.retain(|annotation| {
+    self.annotations.retain(|annotation| {
       annotation.start < annotation.end && annotation.start < self.string.len()
     });
   }

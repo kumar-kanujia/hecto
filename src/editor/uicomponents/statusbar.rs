@@ -33,7 +33,7 @@ impl UIComponent for StatusBar {
   }
 
   fn draw(&mut self, origin_row: RowIdx) -> Result<(), std::io::Error> {
-    //Assemble the first part of the status bar
+    // Assemble the first part of the status bar
     let line_count = self.current_status.line_count_to_string();
     let modified_indicator = self.current_status.modified_indicator_to_string();
 
@@ -54,7 +54,7 @@ impl UIComponent for StatusBar {
 
     let status = format!("{beginning}{back_part:>remainder_len$}");
 
-    //Only print out the status if it fits. Otherwise write out an empty string to ensure the row is cleared.
+    // Only print out the status if it fits. Otherwise write out an empty string to ensure the row is cleared.
     let to_print = if status.len() <= self.size.width {
       status
     } else {
